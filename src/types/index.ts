@@ -39,7 +39,9 @@ export type AccidentRecord = {
   insurancePay: number;
   driverPay: number;
   companyShare: number;
+  insurancePaymentMethod: string;
   paymentDate: string;
+  remainingPayment: number;
   tnds: YesNo;
   materialDamage: YesNo;
   vehicleStopDays: number;
@@ -83,9 +85,14 @@ export const DEFAULT_ASSESSORS = [
   "Lê Hoàng Định giá",
 ];
 
-export function computeRemainingPayment(record: Pick<
-  AccidentRecord,
-  "totalLoss" | "insurancePay" | "driverPay" | "companyShare"
->): number {
-  return Math.max(0, record.totalLoss - record.insurancePay - record.driverPay - record.companyShare);
-}
+export const DEFAULT_INSURANCE_PAYMENT_METHODS = [
+  "BH thanh toán về công ty",
+  "Bảo hiểm thanh toán cho gara",
+];
+
+export const DEFAULT_CAUSES = [
+  "Sử dụng điện thoại",
+  "Xe đi ngược chiều không làm chủ tốc độ",
+  "Thiếu quan sát",
+  "Mặt đường khu vực kho không bằng phẳng",
+];

@@ -1,6 +1,7 @@
+/** Định dạng số tiền với dấu phẩy ngăn cách hàng nghìn (vd: 12,500,000). */
 export function formatCurrency(value: number): string {
   if (!Number.isFinite(value)) return "—";
-  return value.toLocaleString("vi-VN");
+  return value.toLocaleString("en-US");
 }
 
 export function parseCurrencyInput(raw: string): number {

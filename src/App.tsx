@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { LuPlus, LuTriangleAlert } from "react-icons/lu";
 
+import AccidentDetailView from "./components/AccidentDetailView";
 import AccidentFilterCard from "./components/AccidentFilterCard";
 import AccidentFormModal, {
   createEmptyAccidentForm,
@@ -15,8 +16,9 @@ import {
 } from "./data/mockData";
 import type { AccidentFilterState, AccidentRecord, AreaCode } from "./types";
 import {
-  DEFAULT_ASSESSORS,
+  DEFAULT_CAUSES,
   DEFAULT_INSURANCE_COMPANIES,
+  DEFAULT_INSURANCE_PAYMENT_METHODS,
 } from "./types";
 import { currentMonthDateRange } from "./utils/dateUtils";
 
@@ -24,6 +26,35 @@ const defaultDateRange = currentMonthDateRange();
 
 function createId(): string {
   return `tn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function toFormValues(record: AccidentRecord): AccidentFormValues {
+  return {
+    status: record.status,
+    area: record.area,
+    vehicleId: record.vehicleId,
+    driverName: record.driverName,
+    incidentLocation: record.incidentLocation,
+    incidentDate: record.incidentDate,
+    insuranceCompany: record.insuranceCompany,
+    assessor: record.assessor,
+    description: record.description,
+    cause: record.cause,
+    detailType: record.detailType,
+    timeOfDay: record.timeOfDay,
+    completionDate: record.completionDate,
+    totalLoss: record.totalLoss,
+    insurancePay: record.insurancePay,
+    driverPay: record.driverPay,
+    companyShare: record.companyShare,
+    insurancePaymentMethod: record.insurancePaymentMethod,
+    paymentDate: record.paymentDate,
+    remainingPayment: record.remainingPayment,
+    tnds: record.tnds,
+    materialDamage: record.materialDamage,
+    vehicleStopDays: record.vehicleStopDays,
+    notes: record.notes,
+  };
 }
 
 export default function App() {
@@ -38,8 +69,12 @@ export default function App() {
 
   const [records, setRecords] = useState<AccidentRecord[]>(DEFAULT_ACCIDENTS);
   const [insuranceOptions, setInsuranceOptions] = useState<string[]>([...DEFAULT_INSURANCE_COMPANIES]);
-  const [assessorOptions, setAssessorOptions] = useState<string[]>([...DEFAULT_ASSESSORS]);
+  const [paymentMethodOptions, setPaymentMethodOptions] = useState<string[]>([
+    ...DEFAULT_INSURANCE_PAYMENT_METHODS,
+  ]);
+  const [causeOptions, setCauseOptions] = useState<string[]>([...DEFAULT_CAUSES]);
 
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,6 +85,11 @@ export default function App() {
   const patchFilter = useCallback((patch: Partial<AccidentFilterState>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  const detailRecord = useMemo(
+    () => (detailId ? records.find((row) => row.id === detailId) ?? null : null),
+    [detailId, records]
+  );
 
   const filteredRecords = useMemo(() => {
     const selectedDriver =
@@ -129,33 +169,14 @@ export default function App() {
     setFormOpen(true);
   };
 
+  const openDetail = (record: AccidentRecord) => {
+    setDetailId(record.id);
+  };
+
   const openEditForm = (record: AccidentRecord) => {
     setFormMode("edit");
     setEditingId(record.id);
-    setFormInitialValues({
-      status: record.status,
-      area: record.area,
-      vehicleId: record.vehicleId,
-      driverName: record.driverName,
-      incidentLocation: record.incidentLocation,
-      incidentDate: record.incidentDate,
-      insuranceCompany: record.insuranceCompany,
-      assessor: record.assessor,
-      description: record.description,
-      cause: record.cause,
-      detailType: record.detailType,
-      timeOfDay: record.timeOfDay,
-      completionDate: record.completionDate,
-      totalLoss: record.totalLoss,
-      insurancePay: record.insurancePay,
-      driverPay: record.driverPay,
-      companyShare: record.companyShare,
-      paymentDate: record.paymentDate,
-      tnds: record.tnds,
-      materialDamage: record.materialDamage,
-      vehicleStopDays: record.vehicleStopDays,
-      notes: record.notes,
-    });
+    setFormInitialValues(toFormValues(record));
     setFormOpen(true);
   };
 
@@ -172,37 +193,54 @@ export default function App() {
 
   const handleDelete = (id: string) => {
     setRecords((prev) => prev.filter((row) => row.id !== id));
+    if (detailId === id) setDetailId(null);
   };
 
   return (
     <FeaturePageShell>
-      <PageTitle>Tai nạn sự cố của xe</PageTitle>
+      {detailRecord ? (
+        <AccidentDetailView
+          record={detailRecord}
+          onBack={() => setDetailId(null)}
+          onEdit={() => openEditForm(detailRecord)}
+        />
+      ) : (
+        <>
+          <PageTitle>Tai nạn sự cố của xe</PageTitle>
 
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
-          <div className="space-y-3">
-            <AccidentFilterCard
-              filter={filter}
-              drivers={MOCK_DRIVERS}
-              vehicles={areaVehicles}
-              onChange={patchFilter}
-            />
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4">
+              <div className="shrink-0 space-y-3">
+                <AccidentFilterCard
+                  filter={filter}
+                  drivers={MOCK_DRIVERS}
+                  vehicles={areaVehicles}
+                  onChange={patchFilter}
+                />
 
-            <KpiCardsGrid items={kpiItems} />
+                <KpiCardsGrid items={kpiItems} />
 
-            <div className="flex justify-end">
-              <PrimaryButton onClick={openCreateForm}>
-                <span className="inline-flex items-center gap-1.5">
-                  <LuPlus className="h-4 w-4" aria-hidden />
-                  Thêm tai nạn/sự cố
-                </span>
-              </PrimaryButton>
+                <div className="flex justify-end">
+                  <PrimaryButton onClick={openCreateForm}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <LuPlus className="h-4 w-4" aria-hidden />
+                      Thêm tai nạn/sự cố
+                    </span>
+                  </PrimaryButton>
+                </div>
+              </div>
+
+              <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+                <AccidentTable
+                  records={filteredRecords}
+                  onViewDetail={openDetail}
+                  onDelete={handleDelete}
+                />
+              </div>
             </div>
-
-            <AccidentTable records={filteredRecords} onEdit={openEditForm} onDelete={handleDelete} />
-          </div>
-        </div>
-      </section>
+          </section>
+        </>
+      )}
 
       <AccidentFormModal
         open={formOpen}
@@ -211,9 +249,11 @@ export default function App() {
         drivers={MOCK_DRIVERS}
         vehicles={MOCK_VEHICLES}
         insuranceOptions={insuranceOptions}
-        assessorOptions={assessorOptions}
+        paymentMethodOptions={paymentMethodOptions}
+        causeOptions={causeOptions}
         onInsuranceOptionsChange={setInsuranceOptions}
-        onAssessorOptionsChange={setAssessorOptions}
+        onPaymentMethodOptionsChange={setPaymentMethodOptions}
+        onCauseOptionsChange={setCauseOptions}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
       />
