@@ -1,3 +1,4 @@
+import { Children, isValidElement } from "react";
 import { LuArrowLeft, LuSquarePen } from "react-icons/lu";
 
 import type { AccidentRecord } from "../types";
@@ -16,6 +17,8 @@ type AccidentDetailViewProps = {
   onEdit: (section: AccidentEditSection) => void;
 };
 
+const DETAIL_COLUMN_COUNT = 3;
+
 function formatDate(value: string): string {
   return value ? formatViDate(value) : "—";
 }
@@ -24,6 +27,24 @@ function statusBadgeClass(status: AccidentRecord["status"]): string {
   if (status === "Đã xử lý") return "border-emerald-300 bg-emerald-50 text-emerald-700";
   if (status === "Theo dõi") return "border-blue-300 bg-blue-50 text-blue-700";
   return "border-amber-300 bg-amber-50 text-amber-700";
+}
+
+/** Chia item theo cột, phân đều số lượng (vd: 8 → 3-3-2). */
+function splitIntoColumns<T>(items: T[], columnCount = DETAIL_COLUMN_COUNT): T[][] {
+  const columns: T[][] = Array.from({ length: columnCount }, () => []);
+  if (items.length === 0) return columns;
+
+  const base = Math.floor(items.length / columnCount);
+  const remainder = items.length % columnCount;
+  let index = 0;
+
+  for (let column = 0; column < columnCount; column += 1) {
+    const size = base + (column < remainder ? 1 : 0);
+    columns[column] = items.slice(index, index + size);
+    index += size;
+  }
+
+  return columns;
 }
 
 function DetailItem({
@@ -67,15 +88,22 @@ function DetailSection({
   onEdit: () => void;
   children: React.ReactNode;
 }) {
+  const items = Children.toArray(children).filter((child) => isValidElement(child));
+  const columns = splitIntoColumns(items, DETAIL_COLUMN_COUNT);
+
   return (
     <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
         <h3 className="min-w-0 truncate text-sm font-semibold text-slate-800">{title}</h3>
         <SectionEditButton onClick={onEdit} />
       </div>
-      <dl className="grid min-w-0 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-        {children}
-      </dl>
+      <div className="grid min-w-0 grid-cols-1 gap-x-8 gap-y-4 p-4 md:grid-cols-3">
+        {columns.map((columnItems, columnIndex) => (
+          <dl key={columnIndex} className="flex min-w-0 flex-col gap-4">
+            {columnItems}
+          </dl>
+        ))}
+      </div>
     </section>
   );
 }
@@ -103,11 +131,7 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
               <DetailItem label="Số xe" value={<span className="font-medium">{plateNumber}</span>} />
               <DetailItem label="Tài xế" value={<span className="font-medium">{record.driverName}</span>} />
               <DetailItem label="Khu vực" value={AREA_LABEL_BY_CODE[record.area]} />
-              <DetailItem
-                label="Địa điểm xảy ra tai nạn"
-                value={record.incidentLocation}
-                className="sm:col-span-2"
-              />
+              <DetailItem label="Địa điểm xảy ra tai nạn" value={record.incidentLocation} />
               <DetailItem
                 label="Ngày xảy ra sự cố"
                 value={<span className="tabular-nums">{formatDate(record.incidentDate)}</span>}
@@ -133,17 +157,17 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
               <DetailItem label="Nguyên nhân" value={record.cause} />
               <DetailItem label="Chi tiết" value={record.detailType} />
               <DetailItem label="Thời điểm" value={record.timeOfDay} />
-              <DetailItem
-                label="Diễn giải"
-                value={record.description}
-                className="sm:col-span-2 lg:col-span-3"
-              />
+              <DetailItem label="Diễn giải" value={record.description} />
             </DetailSection>
 
             <DetailSection title="Chi phí & thanh toán" onEdit={() => onEdit("payment")}>
               <DetailItem
                 label="Ngày hoàn thành hồ sơ"
                 value={<span className="tabular-nums">{formatDate(record.completionDate)}</span>}
+              />
+              <DetailItem
+                label="Ngày thanh toán"
+                value={<span className="tabular-nums">{formatDate(record.paymentDate)}</span>}
               />
               <DetailItem
                 label="Tổn thất"
@@ -163,10 +187,6 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
               />
               <DetailItem label="Hình thức bảo hiểm thanh toán" value={record.insurancePaymentMethod} />
               <DetailItem
-                label="Ngày thanh toán"
-                value={<span className="tabular-nums">{formatDate(record.paymentDate)}</span>}
-              />
-              <DetailItem
                 label="Số tiền còn lại phải thanh toán"
                 value={
                   <span className="font-medium tabular-nums text-amber-700">
@@ -183,7 +203,7 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
                 label="Số ngày xe dừng"
                 value={<span className="tabular-nums">{record.vehicleStopDays}</span>}
               />
-              <DetailItem label="Ghi chú" value={record.notes} className="sm:col-span-2 lg:col-span-3" />
+              <DetailItem label="Ghi chú" value={record.notes} />
             </DetailSection>
           </div>
         </section>
