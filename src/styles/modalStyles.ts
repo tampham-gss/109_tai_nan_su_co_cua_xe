@@ -28,7 +28,7 @@ export const MODAL_SEARCH_CONTROL_CLASS =
   "flex h-10 max-h-10 min-h-10 min-w-0 items-center rounded-lg border border-gray-300 bg-white px-3 py-0 shadow-sm";
 
 export const MODAL_NATIVE_INPUT_CLASS =
-  "box-border h-10 min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
+  "box-border h-10 min-h-10 w-full min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
 
 export const MODAL_NATIVE_INPUT_INNER_CLASS =
   "min-h-0 w-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm text-slate-900 shadow-none outline-none ring-0 focus:ring-0";

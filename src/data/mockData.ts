@@ -1,4 +1,4 @@
-import type { AccidentRecord, Driver, Vehicle } from "../types";
+import type { AccidentActivityChange, AccidentActivityLog, AccidentRecord, Driver, Vehicle } from "../types";
 
 export const MOCK_DRIVERS: Driver[] = [
   { id: "d1", name: "Nguyễn Văn An" },
@@ -24,6 +24,16 @@ export const MOCK_VEHICLES: Vehicle[] = [
 
 export function getVehicleById(vehicleId: string): Vehicle | undefined {
   return MOCK_VEHICLES.find((vehicle) => vehicle.id === vehicleId);
+}
+
+function createLog(
+  id: string,
+  createdAt: string,
+  actorName: string,
+  action: AccidentActivityLog["action"],
+  changes: AccidentActivityChange[] = []
+): AccidentActivityLog {
+  return { id, createdAt, actorName, action, changes };
 }
 
 export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
@@ -53,6 +63,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 2,
     notes: "Đang chờ giám định",
+    activityLogs: [createLog("log-001-1", "2026-07-02T08:15:00", "Nguyễn Thị Hạnh", "CREATED")],
   },
   {
     id: "tn-002",
@@ -80,6 +91,29 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 1,
     notes: "Chờ bổ sung hồ sơ ảnh hiện trường",
+    activityLogs: [
+      createLog("log-002-2", "2026-07-01T10:20:00", "Lê Văn Khôi", "UPDATED", [
+        {
+          field: "status",
+          fieldLabel: "Trạng thái",
+          oldValue: "Chưa xử lý",
+          newValue: "Theo dõi",
+        },
+        {
+          field: "insurancePay",
+          fieldLabel: "BH đền",
+          oldValue: "0",
+          newValue: "5,000,000",
+        },
+        {
+          field: "notes",
+          fieldLabel: "Ghi chú",
+          oldValue: "—",
+          newValue: "Chờ bổ sung hồ sơ ảnh hiện trường",
+        },
+      ]),
+      createLog("log-002-1", "2026-06-28T14:05:00", "Nguyễn Thị Hạnh", "CREATED"),
+    ],
   },
   {
     id: "tn-003",
@@ -107,6 +141,43 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 0,
     notes: "Đã thanh toán đủ",
+    activityLogs: [
+      createLog("log-003-3", "2026-06-28T16:40:00", "Phạm Quốc Bảo", "UPDATED", [
+        {
+          field: "status",
+          fieldLabel: "Trạng thái",
+          oldValue: "Theo dõi",
+          newValue: "Đã xử lý",
+        },
+        {
+          field: "paymentDate",
+          fieldLabel: "Ngày thanh toán",
+          oldValue: "—",
+          newValue: "28/06/2026",
+        },
+        {
+          field: "remainingPayment",
+          fieldLabel: "Số tiền còn lại phải thanh toán",
+          oldValue: "700,000",
+          newValue: "0",
+        },
+      ]),
+      createLog("log-003-2", "2026-06-25T09:10:00", "Lê Văn Khôi", "UPDATED", [
+        {
+          field: "completionDate",
+          fieldLabel: "Ngày hoàn thành hồ sơ",
+          oldValue: "—",
+          newValue: "25/06/2026",
+        },
+        {
+          field: "status",
+          fieldLabel: "Trạng thái",
+          oldValue: "Chưa xử lý",
+          newValue: "Theo dõi",
+        },
+      ]),
+      createLog("log-003-1", "2026-06-15T21:30:00", "Nguyễn Thị Hạnh", "CREATED"),
+    ],
   },
   {
     id: "tn-004",
@@ -134,6 +205,23 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 3,
     notes: "",
+    activityLogs: [
+      createLog("log-004-2", "2026-06-05T11:00:00", "Phạm Quốc Bảo", "UPDATED", [
+        {
+          field: "status",
+          fieldLabel: "Trạng thái",
+          oldValue: "Theo dõi",
+          newValue: "Đã xử lý",
+        },
+        {
+          field: "insurancePay",
+          fieldLabel: "BH đền",
+          oldValue: "0",
+          newValue: "6,800,000",
+        },
+      ]),
+      createLog("log-004-1", "2026-05-20T15:45:00", "Lê Văn Khôi", "CREATED"),
+    ],
   },
   {
     id: "tn-005",
@@ -161,5 +249,28 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 4,
     notes: "Xe đang sửa tại garage đối tác",
+    activityLogs: [
+      createLog("log-005-2", "2026-07-06T08:30:00", "Nguyễn Thị Hạnh", "UPDATED", [
+        {
+          field: "status",
+          fieldLabel: "Trạng thái",
+          oldValue: "Chưa xử lý",
+          newValue: "Theo dõi",
+        },
+        {
+          field: "vehicleStopDays",
+          fieldLabel: "Số ngày xe dừng",
+          oldValue: "0",
+          newValue: "4",
+        },
+        {
+          field: "notes",
+          fieldLabel: "Ghi chú",
+          oldValue: "—",
+          newValue: "Xe đang sửa tại garage đối tác",
+        },
+      ]),
+      createLog("log-005-1", "2026-07-05T22:10:00", "Lê Văn Khôi", "CREATED"),
+    ],
   },
 ];

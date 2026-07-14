@@ -20,6 +20,23 @@ export type Vehicle = {
   areaLabel: string;
 };
 
+export type AccidentActivityAction = "CREATED" | "UPDATED";
+
+export type AccidentActivityChange = {
+  field: string;
+  fieldLabel: string;
+  oldValue: string;
+  newValue: string;
+};
+
+export type AccidentActivityLog = {
+  id: string;
+  createdAt: string;
+  actorName: string;
+  action: AccidentActivityAction;
+  changes: AccidentActivityChange[];
+};
+
 export type AccidentRecord = {
   id: string;
   status: AccidentStatus;
@@ -46,6 +63,7 @@ export type AccidentRecord = {
   materialDamage: YesNo;
   vehicleStopDays: number;
   notes: string;
+  activityLogs: AccidentActivityLog[];
 };
 
 export type AccidentFilterState = {

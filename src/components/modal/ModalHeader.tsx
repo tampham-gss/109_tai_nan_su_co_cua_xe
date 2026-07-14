@@ -11,7 +11,7 @@ type ModalHeaderProps = {
 export default function ModalHeader({ title, titleId, onClose }: ModalHeaderProps) {
   return (
     <header className={MODAL_HEADER_CLASS}>
-      <h2 id={titleId} className={MODAL_HEADING_CLASS}>
+      <h2 id={titleId} className={`${MODAL_HEADING_CLASS} min-w-0 break-words`}>
         {title}
       </h2>
       <button

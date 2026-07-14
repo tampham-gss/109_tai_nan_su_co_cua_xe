@@ -5,6 +5,7 @@ import AccidentDetailView from "./components/AccidentDetailView";
 import AccidentFilterCard from "./components/AccidentFilterCard";
 import AccidentFormModal, {
   createEmptyAccidentForm,
+  type AccidentEditSection,
   type AccidentFormValues,
 } from "./components/AccidentFormModal";
 import AccidentTable from "./components/AccidentTable";
@@ -21,11 +22,17 @@ import {
   DEFAULT_INSURANCE_PAYMENT_METHODS,
 } from "./types";
 import { currentMonthDateRange } from "./utils/dateUtils";
+import {
+  buildActivityChanges,
+  createActivityLogEntry,
+  toComparableFormValues,
+} from "./utils/activityUtils";
 
 const defaultDateRange = currentMonthDateRange();
+const SYSTEM_ACTOR_NAME = "Nguyễn Thị Hạnh";
 
-function createId(): string {
-  return `tn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+function createId(prefix = "tn"): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 function toFormValues(record: AccidentRecord): AccidentFormValues {
@@ -77,6 +84,7 @@ export default function App() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editSection, setEditSection] = useState<AccidentEditSection | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formInitialValues, setFormInitialValues] = useState<AccidentFormValues>(
     createEmptyAccidentForm(defaultDateRange.endDate)
@@ -164,6 +172,7 @@ export default function App() {
 
   const openCreateForm = () => {
     setFormMode("create");
+    setEditSection(null);
     setEditingId(null);
     setFormInitialValues(createEmptyAccidentForm(filter.endDate));
     setFormOpen(true);
@@ -173,8 +182,9 @@ export default function App() {
     setDetailId(record.id);
   };
 
-  const openEditForm = (record: AccidentRecord) => {
+  const openEditSection = (record: AccidentRecord, section: AccidentEditSection) => {
     setFormMode("edit");
+    setEditSection(section);
     setEditingId(record.id);
     setFormInitialValues(toFormValues(record));
     setFormOpen(true);
@@ -182,10 +192,29 @@ export default function App() {
 
   const handleSubmit = (values: AccidentFormValues) => {
     if (formMode === "create") {
-      setRecords((prev) => [{ id: createId(), ...values }, ...prev]);
+      setRecords((prev) => [
+        {
+          id: createId(),
+          ...values,
+          activityLogs: [createActivityLogEntry("CREATED", SYSTEM_ACTOR_NAME)],
+        },
+        ...prev,
+      ]);
     } else if (editingId) {
       setRecords((prev) =>
-        prev.map((row) => (row.id === editingId ? { id: editingId, ...values } : row))
+        prev.map((row) => {
+          if (row.id !== editingId) return row;
+          const changes = buildActivityChanges(toComparableFormValues(row), values);
+          const nextLogs =
+            changes.length > 0
+              ? [createActivityLogEntry("UPDATED", SYSTEM_ACTOR_NAME, changes), ...row.activityLogs]
+              : row.activityLogs;
+          return {
+            id: editingId,
+            ...values,
+            activityLogs: nextLogs,
+          };
+        })
       );
     }
     setFormOpen(false);
@@ -202,7 +231,7 @@ export default function App() {
         <AccidentDetailView
           record={detailRecord}
           onBack={() => setDetailId(null)}
-          onEdit={() => openEditForm(detailRecord)}
+          onEdit={(section) => openEditSection(detailRecord, section)}
         />
       ) : (
         <>
@@ -245,6 +274,7 @@ export default function App() {
       <AccidentFormModal
         open={formOpen}
         mode={formMode}
+        editSection={editSection}
         initialValues={formInitialValues}
         drivers={MOCK_DRIVERS}
         vehicles={MOCK_VEHICLES}

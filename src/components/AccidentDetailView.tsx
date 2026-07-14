@@ -5,12 +5,15 @@ import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
 import { formatCurrency } from "../utils/currencyUtils";
 import { formatViDate } from "../utils/dateUtils";
-import { cn, OutlineButton, PageTitle, PrimaryButton } from "./ui";
+import type { AccidentEditSection } from "./AccidentFormModal";
+import AccidentSystemInfoCard from "./AccidentSystemInfoCard";
+import { Tooltip } from "./Tooltip";
+import { cn, OutlineButton, PageTitle } from "./ui";
 
 type AccidentDetailViewProps = {
   record: AccidentRecord;
   onBack: () => void;
-  onEdit: () => void;
+  onEdit: (section: AccidentEditSection) => void;
 };
 
 function formatDate(value: string): string {
@@ -40,19 +43,39 @@ function DetailItem({
   );
 }
 
+function SectionEditButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Tooltip label="Chỉnh sửa" placement="bottom">
+      <button
+        type="button"
+        aria-label="Chỉnh sửa"
+        onClick={onClick}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600"
+      >
+        <LuSquarePen className="h-4 w-4" aria-hidden />
+      </button>
+    </Tooltip>
+  );
+}
+
 function DetailSection({
   title,
+  onEdit,
   children,
 }: {
   title: string;
+  onEdit: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-slate-50/40">
-      <h3 className="border-b border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-800">
-        {title}
-      </h3>
-      <dl className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+    <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
+        <h3 className="min-w-0 truncate text-sm font-semibold text-slate-800">{title}</h3>
+        <SectionEditButton onClick={onEdit} />
+      </div>
+      <dl className="grid min-w-0 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+        {children}
+      </dl>
     </section>
   );
 }
@@ -63,115 +86,113 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
 
   return (
     <>
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <OutlineButton onClick={onBack} className="shrink-0 px-2.5">
-            <span className="inline-flex items-center gap-1.5">
-              <LuArrowLeft className="h-4 w-4" aria-hidden />
-              Quay lại
-            </span>
-          </OutlineButton>
-          <PageTitle>Chi tiết tai nạn/sự cố</PageTitle>
-        </div>
-
-        <PrimaryButton onClick={onEdit}>
+      <div className="flex shrink-0 items-center gap-3">
+        <OutlineButton onClick={onBack} className="shrink-0 px-2.5">
           <span className="inline-flex items-center gap-1.5">
-            <LuSquarePen className="h-4 w-4" aria-hidden />
-            Chỉnh sửa
+            <LuArrowLeft className="h-4 w-4" aria-hidden />
+            Quay lại
           </span>
-        </PrimaryButton>
+        </OutlineButton>
+        <PageTitle>Chi tiết tai nạn/sự cố</PageTitle>
       </div>
 
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
-          <DetailSection title="Thông tin sự cố">
-            <DetailItem label="Số xe" value={<span className="font-medium">{plateNumber}</span>} />
-            <DetailItem label="Tài xế" value={<span className="font-medium">{record.driverName}</span>} />
-            <DetailItem label="Khu vực" value={AREA_LABEL_BY_CODE[record.area]} />
-            <DetailItem
-              label="Địa điểm xảy ra tai nạn"
-              value={record.incidentLocation}
-              className="sm:col-span-2"
-            />
-            <DetailItem
-              label="Ngày xảy ra sự cố"
-              value={<span className="tabular-nums">{formatDate(record.incidentDate)}</span>}
-            />
-            <DetailItem
-              label="Trạng thái"
-              value={
-                <span
-                  className={cn(
-                    "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                    statusBadgeClass(record.status)
-                  )}
-                >
-                  {record.status}
-                </span>
-              }
-            />
-          </DetailSection>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden lg:flex-row lg:items-stretch">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto">
+            <DetailSection title="Thông tin sự cố" onEdit={() => onEdit("incident")}>
+              <DetailItem label="Số xe" value={<span className="font-medium">{plateNumber}</span>} />
+              <DetailItem label="Tài xế" value={<span className="font-medium">{record.driverName}</span>} />
+              <DetailItem label="Khu vực" value={AREA_LABEL_BY_CODE[record.area]} />
+              <DetailItem
+                label="Địa điểm xảy ra tai nạn"
+                value={record.incidentLocation}
+                className="sm:col-span-2"
+              />
+              <DetailItem
+                label="Ngày xảy ra sự cố"
+                value={<span className="tabular-nums">{formatDate(record.incidentDate)}</span>}
+              />
+              <DetailItem
+                label="Trạng thái"
+                value={
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                      statusBadgeClass(record.status)
+                    )}
+                  >
+                    {record.status}
+                  </span>
+                }
+              />
+            </DetailSection>
 
-          <DetailSection title="Nội dung & nguyên nhân">
-            <DetailItem label="Đơn vị Bảo hiểm" value={record.insuranceCompany} />
-            <DetailItem label="Giám định viên" value={record.assessor} />
-            <DetailItem label="Nguyên nhân" value={record.cause} />
-            <DetailItem label="Chi tiết" value={record.detailType} />
-            <DetailItem label="Thời điểm" value={record.timeOfDay} />
-            <DetailItem
-              label="Diễn giải"
-              value={record.description}
-              className="sm:col-span-2 lg:col-span-3"
-            />
-          </DetailSection>
+            <DetailSection title="Nội dung & nguyên nhân" onEdit={() => onEdit("content")}>
+              <DetailItem label="Đơn vị Bảo hiểm" value={record.insuranceCompany} />
+              <DetailItem label="Giám định viên" value={record.assessor} />
+              <DetailItem label="Nguyên nhân" value={record.cause} />
+              <DetailItem label="Chi tiết" value={record.detailType} />
+              <DetailItem label="Thời điểm" value={record.timeOfDay} />
+              <DetailItem
+                label="Diễn giải"
+                value={record.description}
+                className="sm:col-span-2 lg:col-span-3"
+              />
+            </DetailSection>
 
-          <DetailSection title="Chi phí & thanh toán">
-            <DetailItem
-              label="Ngày hoàn thành hồ sơ"
-              value={<span className="tabular-nums">{formatDate(record.completionDate)}</span>}
-            />
-            <DetailItem
-              label="Tổn thất"
-              value={<span className="tabular-nums">{formatCurrency(record.totalLoss)}</span>}
-            />
-            <DetailItem
-              label="BH đền"
-              value={<span className="tabular-nums">{formatCurrency(record.insurancePay)}</span>}
-            />
-            <DetailItem
-              label="TX chịu"
-              value={<span className="tabular-nums">{formatCurrency(record.driverPay)}</span>}
-            />
-            <DetailItem
-              label="Cty chia sẻ"
-              value={<span className="tabular-nums">{formatCurrency(record.companyShare)}</span>}
-            />
-            <DetailItem label="Hình thức bảo hiểm thanh toán" value={record.insurancePaymentMethod} />
-            <DetailItem
-              label="Ngày thanh toán"
-              value={<span className="tabular-nums">{formatDate(record.paymentDate)}</span>}
-            />
-            <DetailItem
-              label="Số tiền còn lại phải thanh toán"
-              value={
-                <span className="font-medium tabular-nums text-amber-700">
-                  {formatCurrency(record.remainingPayment)}
-                </span>
-              }
-            />
-          </DetailSection>
+            <DetailSection title="Chi phí & thanh toán" onEdit={() => onEdit("payment")}>
+              <DetailItem
+                label="Ngày hoàn thành hồ sơ"
+                value={<span className="tabular-nums">{formatDate(record.completionDate)}</span>}
+              />
+              <DetailItem
+                label="Tổn thất"
+                value={<span className="tabular-nums">{formatCurrency(record.totalLoss)}</span>}
+              />
+              <DetailItem
+                label="BH đền"
+                value={<span className="tabular-nums">{formatCurrency(record.insurancePay)}</span>}
+              />
+              <DetailItem
+                label="TX chịu"
+                value={<span className="tabular-nums">{formatCurrency(record.driverPay)}</span>}
+              />
+              <DetailItem
+                label="Cty chia sẻ"
+                value={<span className="tabular-nums">{formatCurrency(record.companyShare)}</span>}
+              />
+              <DetailItem label="Hình thức bảo hiểm thanh toán" value={record.insurancePaymentMethod} />
+              <DetailItem
+                label="Ngày thanh toán"
+                value={<span className="tabular-nums">{formatDate(record.paymentDate)}</span>}
+              />
+              <DetailItem
+                label="Số tiền còn lại phải thanh toán"
+                value={
+                  <span className="font-medium tabular-nums text-amber-700">
+                    {formatCurrency(record.remainingPayment)}
+                  </span>
+                }
+              />
+            </DetailSection>
 
-          <DetailSection title="Bảo hiểm & thông tin khác">
-            <DetailItem label="TNDS" value={record.tnds} />
-            <DetailItem label="Vật chất" value={record.materialDamage} />
-            <DetailItem
-              label="Số ngày xe dừng"
-              value={<span className="tabular-nums">{record.vehicleStopDays}</span>}
-            />
-            <DetailItem label="Ghi chú" value={record.notes} className="sm:col-span-2 lg:col-span-3" />
-          </DetailSection>
-        </div>
-      </section>
+            <DetailSection title="Bảo hiểm & thông tin khác" onEdit={() => onEdit("other")}>
+              <DetailItem label="TNDS" value={record.tnds} />
+              <DetailItem label="Vật chất" value={record.materialDamage} />
+              <DetailItem
+                label="Số ngày xe dừng"
+                value={<span className="tabular-nums">{record.vehicleStopDays}</span>}
+              />
+              <DetailItem label="Ghi chú" value={record.notes} className="sm:col-span-2 lg:col-span-3" />
+            </DetailSection>
+          </div>
+        </section>
+
+        <AccidentSystemInfoCard
+          logs={record.activityLogs}
+          className="h-[min(18rem,32vh)] w-full shrink-0 lg:h-auto lg:w-[min(300px,32%)] lg:max-w-[300px] lg:shrink-0"
+        />
+      </div>
     </>
   );
 }
