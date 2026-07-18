@@ -8,7 +8,7 @@ import AccidentFormModal, {
   type AccidentEditSection,
   type AccidentFormValues,
 } from "./components/AccidentFormModal";
-import AccidentTable from "./components/AccidentTable";
+import AccidentTable, { type AccidentStatusPatch } from "./components/AccidentTable";
 import { FeaturePageShell, KpiCardsGrid, PageTitle, PrimaryButton } from "./components/ui";
 import {
   DEFAULT_ACCIDENTS,
@@ -18,8 +18,12 @@ import {
 import type { AccidentFilterState, AccidentRecord, AreaCode } from "./types";
 import {
   DEFAULT_CAUSES,
+  DEFAULT_INCIDENT_TYPES,
+  DEFAULT_INFORMATION_SOURCES,
   DEFAULT_INSURANCE_COMPANIES,
   DEFAULT_INSURANCE_PAYMENT_METHODS,
+  DEFAULT_REPORTING_DEPARTMENTS,
+  DEFAULT_SEVERITIES,
 } from "./types";
 import { currentMonthDateRange } from "./utils/dateUtils";
 import {
@@ -36,32 +40,8 @@ function createId(prefix = "tn"): string {
 }
 
 function toFormValues(record: AccidentRecord): AccidentFormValues {
-  return {
-    status: record.status,
-    area: record.area,
-    vehicleId: record.vehicleId,
-    driverName: record.driverName,
-    incidentLocation: record.incidentLocation,
-    incidentDate: record.incidentDate,
-    insuranceCompany: record.insuranceCompany,
-    assessor: record.assessor,
-    description: record.description,
-    cause: record.cause,
-    detailType: record.detailType,
-    timeOfDay: record.timeOfDay,
-    completionDate: record.completionDate,
-    totalLoss: record.totalLoss,
-    insurancePay: record.insurancePay,
-    driverPay: record.driverPay,
-    companyShare: record.companyShare,
-    insurancePaymentMethod: record.insurancePaymentMethod,
-    paymentDate: record.paymentDate,
-    remainingPayment: record.remainingPayment,
-    tnds: record.tnds,
-    materialDamage: record.materialDamage,
-    vehicleStopDays: record.vehicleStopDays,
-    notes: record.notes,
-  };
+  const { id: _id, activityLogs: _logs, ...values } = record;
+  return values;
 }
 
 export default function App() {
@@ -71,7 +51,11 @@ export default function App() {
     areaId: "all",
     driverId: "all",
     vehicleId: "all",
-    status: "all",
+    receptionStatus: "all",
+    processingStatus: "all",
+    overallStatus: "all",
+    incidentType: "all",
+    severity: "all",
   });
 
   const [records, setRecords] = useState<AccidentRecord[]>(DEFAULT_ACCIDENTS);
@@ -80,6 +64,12 @@ export default function App() {
     ...DEFAULT_INSURANCE_PAYMENT_METHODS,
   ]);
   const [causeOptions, setCauseOptions] = useState<string[]>([...DEFAULT_CAUSES]);
+  const [informationSourceOptions, setInformationSourceOptions] = useState<string[]>([
+    ...DEFAULT_INFORMATION_SOURCES,
+  ]);
+  const [reportingDepartmentOptions, setReportingDepartmentOptions] = useState<string[]>([
+    ...DEFAULT_REPORTING_DEPARTMENTS,
+  ]);
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -115,7 +105,19 @@ export default function App() {
       if (filter.vehicleId !== "all" && row.vehicleId !== filter.vehicleId) {
         return false;
       }
-      if (filter.status !== "all" && row.status !== filter.status) {
+      if (filter.receptionStatus !== "all" && row.receptionStatus !== filter.receptionStatus) {
+        return false;
+      }
+      if (filter.processingStatus !== "all" && row.processingStatus !== filter.processingStatus) {
+        return false;
+      }
+      if (filter.overallStatus !== "all" && row.overallStatus !== filter.overallStatus) {
+        return false;
+      }
+      if (filter.incidentType !== "all" && row.incidentType !== filter.incidentType) {
+        return false;
+      }
+      if (filter.severity !== "all" && row.severity !== filter.severity) {
         return false;
       }
       if (selectedDriver && row.driverName !== selectedDriver.name) {
@@ -126,9 +128,9 @@ export default function App() {
   }, [filter, records]);
 
   const kpiItems = useMemo(() => {
-    const pending = filteredRecords.filter((row) => row.status === "Chưa xử lý").length;
-    const tracking = filteredRecords.filter((row) => row.status === "Theo dõi").length;
-    const resolved = filteredRecords.filter((row) => row.status === "Đã xử lý").length;
+    const pending = filteredRecords.filter((row) => row.processingStatus === "Chưa xử lý").length;
+    const inProgress = filteredRecords.filter((row) => row.processingStatus === "Đang xử lý").length;
+    const resolved = filteredRecords.filter((row) => row.processingStatus === "Đã xử lý").length;
 
     return [
       {
@@ -147,9 +149,9 @@ export default function App() {
         iconClass: "text-amber-500",
       },
       {
-        key: "tracking",
-        label: "Theo dõi",
-        value: tracking,
+        key: "inProgress",
+        label: "Đang xử lý",
+        value: inProgress,
         icon: LuTriangleAlert,
         valueClass: "text-blue-700",
         iconClass: "text-blue-500",
@@ -204,14 +206,18 @@ export default function App() {
       setRecords((prev) =>
         prev.map((row) => {
           if (row.id !== editingId) return row;
-          const changes = buildActivityChanges(toComparableFormValues(row), values);
+          const changes = buildActivityChanges(
+            toComparableFormValues(row),
+            toComparableFormValues({ ...row, ...values })
+          );
           const nextLogs =
             changes.length > 0
               ? [createActivityLogEntry("UPDATED", SYSTEM_ACTOR_NAME, changes), ...row.activityLogs]
               : row.activityLogs;
           return {
-            id: editingId,
+            ...row,
             ...values,
+            id: editingId,
             activityLogs: nextLogs,
           };
         })
@@ -223,6 +229,24 @@ export default function App() {
   const handleDelete = (id: string) => {
     setRecords((prev) => prev.filter((row) => row.id !== id));
     if (detailId === id) setDetailId(null);
+  };
+
+  const handleStatusChange = (id: string, patch: AccidentStatusPatch) => {
+    setRecords((prev) =>
+      prev.map((row) => {
+        if (row.id !== id) return row;
+        const next = { ...row, ...patch };
+        const changes = buildActivityChanges(
+          toComparableFormValues(row),
+          toComparableFormValues(next)
+        );
+        if (changes.length === 0) return row;
+        return {
+          ...next,
+          activityLogs: [createActivityLogEntry("UPDATED", SYSTEM_ACTOR_NAME, changes), ...row.activityLogs],
+        };
+      })
+    );
   };
 
   return (
@@ -244,6 +268,8 @@ export default function App() {
                   filter={filter}
                   drivers={MOCK_DRIVERS}
                   vehicles={areaVehicles}
+                  incidentTypeOptions={[...DEFAULT_INCIDENT_TYPES]}
+                  severityOptions={[...DEFAULT_SEVERITIES]}
                   onChange={patchFilter}
                 />
 
@@ -264,6 +290,7 @@ export default function App() {
                   records={filteredRecords}
                   onViewDetail={openDetail}
                   onDelete={handleDelete}
+                  onStatusChange={handleStatusChange}
                 />
               </div>
             </div>
@@ -281,9 +308,13 @@ export default function App() {
         insuranceOptions={insuranceOptions}
         paymentMethodOptions={paymentMethodOptions}
         causeOptions={causeOptions}
+        informationSourceOptions={informationSourceOptions}
+        reportingDepartmentOptions={reportingDepartmentOptions}
         onInsuranceOptionsChange={setInsuranceOptions}
         onPaymentMethodOptionsChange={setPaymentMethodOptions}
         onCauseOptionsChange={setCauseOptions}
+        onInformationSourceOptionsChange={setInformationSourceOptions}
+        onReportingDepartmentOptionsChange={setReportingDepartmentOptions}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
       />

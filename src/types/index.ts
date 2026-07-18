@@ -1,6 +1,10 @@
 export type AreaCode = "HCM" | "HAI_PHONG" | "CLO";
 
-export type AccidentStatus = "Chưa xử lý" | "Theo dõi" | "Đã xử lý";
+export type ReceptionStatus = "Chưa tiếp nhận" | "Đã tiếp nhận";
+
+export type ProcessingStatus = "Chưa xử lý" | "Đang xử lý" | "Đã xử lý";
+
+export type OverallStatus = "Đang theo dõi" | "Đóng";
 
 export type DetailType = "Chủ quan" | "Khách quan";
 
@@ -37,9 +41,30 @@ export type AccidentActivityLog = {
   changes: AccidentActivityChange[];
 };
 
+export type AccidentAttachment = {
+  id: string;
+  name: string;
+  url: string;
+};
+
 export type AccidentRecord = {
   id: string;
-  status: AccidentStatus;
+  code: string;
+  incidentType: string;
+  receptionStatus: ReceptionStatus;
+  processingStatus: ProcessingStatus;
+  overallStatus: OverallStatus;
+  recordedAt: string;
+  source: string;
+  reporterFullName: string;
+  reporterEmail: string;
+  reporterPhone: string;
+  reporterRoleName: string;
+  severity: string;
+  informationSource: string;
+  reportingDepartment: string;
+  handlingSolution: string;
+  attachments: AccidentAttachment[];
   area: AreaCode;
   vehicleId: string;
   driverName: string;
@@ -72,7 +97,11 @@ export type AccidentFilterState = {
   areaId: "all" | AreaCode;
   driverId: "all" | string;
   vehicleId: "all" | string;
-  status: "all" | AccidentStatus;
+  receptionStatus: "all" | ReceptionStatus;
+  processingStatus: "all" | ProcessingStatus;
+  overallStatus: "all" | OverallStatus;
+  incidentType: "all" | string;
+  severity: "all" | string;
 };
 
 export const AREA_OPTIONS: { id: AccidentFilterState["areaId"]; label: string }[] = [
@@ -114,3 +143,19 @@ export const DEFAULT_CAUSES = [
   "Thiếu quan sát",
   "Mặt đường khu vực kho không bằng phẳng",
 ];
+
+export const DEFAULT_INCIDENT_TYPES = [
+  "Sự cố Bất thường/Hư hỏng xe",
+  "Sự cố An toàn / Vận hành",
+];
+
+export const DEFAULT_SEVERITIES = ["Thấp", "Trung bình", "Cao", "Nghiêm trọng"];
+
+export const DEFAULT_INFORMATION_SOURCES = [
+  "Camera",
+  "Báo cáo tài xế",
+  "Hotline",
+  "Khách hàng",
+];
+
+export const DEFAULT_REPORTING_DEPARTMENTS = ["An toàn", "Điều vận", "Kỹ thuật"];

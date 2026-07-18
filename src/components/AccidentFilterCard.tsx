@@ -5,18 +5,21 @@ import { AREA_OPTIONS } from "../types";
 import {
   FILTER_AREA_FIELD_CLASS,
   FILTER_BAR_LAYOUT_CLASS,
+  FILTER_CONTENT_FIELD_CLASS,
   FILTER_DATE_FIELD_CLASS,
   FILTER_DRIVER_FIELD_CLASS,
   FILTER_STATUS_FIELD_CLASS,
   FILTER_VEHICLE_FIELD_CLASS,
 } from "../styles/fieldStyles";
 import FilterAutocomplete from "./FilterAutocomplete";
-import { Card, CardContent, DateInput, FilterField } from "./ui";
+import { Card, CardContent, DatePickerInput, FilterField } from "./ui";
 
 type AccidentFilterCardProps = {
   filter: AccidentFilterState;
   drivers: Driver[];
   vehicles: Vehicle[];
+  incidentTypeOptions: string[];
+  severityOptions: string[];
   onChange: (patch: Partial<AccidentFilterState>) => void;
 };
 
@@ -24,6 +27,8 @@ export default function AccidentFilterCard({
   filter,
   drivers,
   vehicles,
+  incidentTypeOptions,
+  severityOptions,
   onChange,
 }: AccidentFilterCardProps) {
   const areaOptions = useMemo(
@@ -47,28 +52,62 @@ export default function AccidentFilterCard({
     [vehicles]
   );
 
-  const statusOptions = useMemo(
+  const receptionOptions = useMemo(
     () => [
-      { id: "all", label: "Tất cả trạng thái" },
+      { id: "all", label: "Tất cả tiếp nhận" },
+      { id: "Chưa tiếp nhận", label: "Chưa tiếp nhận" },
+      { id: "Đã tiếp nhận", label: "Đã tiếp nhận" },
+    ],
+    []
+  );
+
+  const processingOptions = useMemo(
+    () => [
+      { id: "all", label: "Tất cả xử lý" },
       { id: "Chưa xử lý", label: "Chưa xử lý" },
-      { id: "Theo dõi", label: "Theo dõi" },
+      { id: "Đang xử lý", label: "Đang xử lý" },
       { id: "Đã xử lý", label: "Đã xử lý" },
     ],
     []
+  );
+
+  const overallOptions = useMemo(
+    () => [
+      { id: "all", label: "Tất cả tổng thể" },
+      { id: "Đang theo dõi", label: "Đang theo dõi" },
+      { id: "Đóng", label: "Đóng" },
+    ],
+    []
+  );
+
+  const typeOptions = useMemo(
+    () => [
+      { id: "all", label: "Tất cả loại" },
+      ...incidentTypeOptions.map((item) => ({ id: item, label: item })),
+    ],
+    [incidentTypeOptions]
+  );
+
+  const severityFilterOptions = useMemo(
+    () => [
+      { id: "all", label: "Tất cả mức độ" },
+      ...severityOptions.map((item) => ({ id: item, label: item })),
+    ],
+    [severityOptions]
   );
 
   return (
     <Card>
       <CardContent>
         <div className={FILTER_BAR_LAYOUT_CLASS}>
-          <DateInput
+          <DatePickerInput
             label="Từ ngày"
             className={FILTER_DATE_FIELD_CLASS}
             value={filter.startDate}
             max={filter.endDate}
             onChange={(startDate) => onChange({ startDate })}
           />
-          <DateInput
+          <DatePickerInput
             label="Đến ngày"
             className={FILTER_DATE_FIELD_CLASS}
             value={filter.endDate}
@@ -110,14 +149,66 @@ export default function AccidentFilterCard({
               onChange={(vehicleId) => onChange({ vehicleId })}
             />
           </FilterField>
-          <FilterField label="Trạng thái" className={FILTER_STATUS_FIELD_CLASS}>
+          <FilterField label="Loại sự cố" className={FILTER_CONTENT_FIELD_CLASS}>
             <FilterAutocomplete
-              aria-label="Trạng thái"
-              value={filter.status}
-              options={statusOptions}
-              placeholder="Tất cả trạng thái"
+              aria-label="Loại sự cố"
+              value={filter.incidentType}
+              options={typeOptions}
+              placeholder="Tất cả loại"
               searchable={false}
-              onChange={(status) => onChange({ status: status as AccidentFilterState["status"] })}
+              onChange={(incidentType) => onChange({ incidentType })}
+            />
+          </FilterField>
+          <FilterField label="Mức độ" className={FILTER_STATUS_FIELD_CLASS}>
+            <FilterAutocomplete
+              aria-label="Mức độ sự cố"
+              value={filter.severity}
+              options={severityFilterOptions}
+              placeholder="Tất cả mức độ"
+              searchable={false}
+              onChange={(severity) => onChange({ severity })}
+            />
+          </FilterField>
+          <FilterField label="Tiếp nhận" className={FILTER_STATUS_FIELD_CLASS}>
+            <FilterAutocomplete
+              aria-label="Trạng thái tiếp nhận"
+              value={filter.receptionStatus}
+              options={receptionOptions}
+              placeholder="Tất cả tiếp nhận"
+              searchable={false}
+              onChange={(receptionStatus) =>
+                onChange({
+                  receptionStatus: receptionStatus as AccidentFilterState["receptionStatus"],
+                })
+              }
+            />
+          </FilterField>
+          <FilterField label="Xử lý" className={FILTER_STATUS_FIELD_CLASS}>
+            <FilterAutocomplete
+              aria-label="Trạng thái xử lý"
+              value={filter.processingStatus}
+              options={processingOptions}
+              placeholder="Tất cả xử lý"
+              searchable={false}
+              onChange={(processingStatus) =>
+                onChange({
+                  processingStatus: processingStatus as AccidentFilterState["processingStatus"],
+                })
+              }
+            />
+          </FilterField>
+          <FilterField label="Tổng thể" className={FILTER_STATUS_FIELD_CLASS}>
+            <FilterAutocomplete
+              aria-label="Trạng thái tổng thể"
+              value={filter.overallStatus}
+              options={overallOptions}
+              placeholder="Tất cả tổng thể"
+              searchable={false}
+              onChange={(overallStatus) =>
+                onChange({
+                  overallStatus: overallStatus as AccidentFilterState["overallStatus"],
+                })
+              }
             />
           </FilterField>
         </div>
