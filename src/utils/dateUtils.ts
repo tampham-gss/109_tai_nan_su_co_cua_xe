@@ -24,8 +24,8 @@ export function formatViDate(isoDate: string): string {
   return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
 }
 
-/** Timestamp hoạt động hệ thống — `dd/MM/yyyy HH:mm` */
-export function formatActivityTimestamp(value: string | Date): string {
+/** Timestamp — `dd/MM/yyyy HH:mm:ss` */
+export function formatViDateTime(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
 
@@ -34,8 +34,14 @@ export function formatActivityTimestamp(value: string | Date): string {
   const year = date.getFullYear();
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
 
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+/** Timestamp hoạt động hệ thống — `dd/MM/yyyy HH:mm:ss` */
+export function formatActivityTimestamp(value: string | Date): string {
+  return formatViDateTime(value);
 }
 
 export function parseViDate(viDate: string): string | null {

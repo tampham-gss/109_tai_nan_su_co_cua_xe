@@ -23,6 +23,7 @@ import ModalFooter from "./modal/ModalFooter";
 import ModalHeader from "./modal/ModalHeader";
 import ViDateInput from "./ViDateInput";
 import ViDatePicker from "./ViDatePicker";
+import ViDateTimePicker from "./ViDateTimePicker";
 import { cn, textareaClass } from "./ui";
 import { MODAL_NATIVE_INPUT_CLASS } from "../styles/modalStyles";
 
@@ -406,6 +407,18 @@ export default function AccidentFormModal({
         {showError("incidentDate") ? <ModalFieldError message={errors.incidentDate} /> : null}
       </div>
 
+      <div className="space-y-1.5 sm:col-span-2">
+        <ModalFieldLabel htmlFor="recorded-at">Thời điểm ghi nhận</ModalFieldLabel>
+        <ViDateTimePicker
+          id="recorded-at"
+          aria-label="Thời điểm ghi nhận"
+          className="w-full"
+          value={form.recordedAt}
+          placeholder="dd/MM/yyyy HH:mm:ss"
+          onChange={(recordedAt) => patchForm({ recordedAt })}
+        />
+      </div>
+
       <AutocompleteField
         label="Trạng thái tiếp nhận"
         value={form.receptionStatus}
@@ -724,7 +737,7 @@ export function createEmptyAccidentForm(today: string): AccidentFormValues {
     processingStatus: "Chưa xử lý",
     overallStatus: "Đang theo dõi",
     recordedAt: `${today}T00:00:00`,
-    source: "Web",
+    source: "",
     reporterFullName: "",
     reporterEmail: "",
     reporterPhone: "",

@@ -9,7 +9,7 @@ import type {
 } from "../types";
 import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
-import { formatViDate } from "../utils/dateUtils";
+import { formatViDate, formatViDateTime } from "../utils/dateUtils";
 import { severityBadgeClass } from "../utils/severityUtils";
 import TablePager, { buildPaginationMeta, DEFAULT_PAGE_SIZE } from "./TablePager";
 import { Tooltip } from "./Tooltip";
@@ -254,7 +254,7 @@ export default function AccidentTable({
     <>
       <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
-          <table className="min-w-[1100px] w-full border-collapse text-sm">
+          <table className="min-w-[1280px] w-full border-collapse text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
                 <th className={headerClass}>Mã</th>
@@ -266,6 +266,7 @@ export default function AccidentTable({
                 <th className={headerClass}>Nguồn</th>
                 <th className={headerClass}>Địa điểm</th>
                 <th className={headerClass}>Ngày xảy ra</th>
+                <th className={headerClass}>Ngày tạo/gửi</th>
                 <th className={headerClass}>Diễn giải</th>
                 <th className={headerClass}>Tiếp nhận</th>
                 <th className={headerClass}>Xử lý</th>
@@ -304,11 +305,16 @@ export default function AccidentTable({
                     </td>
                     <td className={cn(bodyClass, "font-medium text-gray-900")}>{row.driverName}</td>
                     <td className={bodyClass}>{AREA_LABEL_BY_CODE[row.area]}</td>
-                    <td className={bodyClass}>{row.source || "—"}</td>
+                    <td className={cn(bodyClass, "max-w-[14rem] truncate")} title={row.source}>
+                      {row.source || "—"}
+                    </td>
                     <td className={cn(bodyClass, "max-w-[14rem] truncate")} title={row.incidentLocation}>
                       {row.incidentLocation || "—"}
                     </td>
                     <td className={cn(bodyClass, "tabular-nums")}>{formatDateCell(row.incidentDate)}</td>
+                    <td className={cn(bodyClass, "tabular-nums whitespace-nowrap")}>
+                      {row.recordedAt ? formatViDateTime(row.recordedAt) : "—"}
+                    </td>
                     <td className={cn(bodyClass, "max-w-[16rem] truncate")} title={row.description}>
                       {row.description || "—"}
                     </td>

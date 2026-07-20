@@ -10,7 +10,7 @@ import type {
 import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
 import { formatCurrency } from "../utils/currencyUtils";
-import { formatViDate } from "../utils/dateUtils";
+import { formatViDate, formatViDateTime } from "../utils/dateUtils";
 import { severityBadgeClass } from "../utils/severityUtils";
 import type { AccidentEditSection } from "./AccidentFormModal";
 import AccidentSystemInfoCard from "./AccidentSystemInfoCard";
@@ -28,13 +28,6 @@ const DETAIL_COLUMN_COUNT = 3;
 
 function formatDate(value: string): string {
   return value ? formatViDate(value) : "—";
-}
-
-function formatDateTime(value: string): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("vi-VN");
 }
 
 function receptionBadgeClass(status: ReceptionStatus): string {
@@ -195,7 +188,7 @@ export default function AccidentDetailView({ record, onBack, onEdit }: AccidentD
               />
               <DetailItem
                 label="Thời điểm ghi nhận"
-                value={<span className="tabular-nums">{formatDateTime(record.recordedAt)}</span>}
+                value={<span className="tabular-nums">{formatViDateTime(record.recordedAt)}</span>}
               />
               <DetailItem
                 label="Trạng thái tiếp nhận"

@@ -89,7 +89,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     materialDamage: "Có",
     vehicleStopDays: 2,
     notes: "Đang chờ giám định",
-    activityLogs: [createLog("log-001-1", "2026-07-02T08:15:00", "Nguyễn Thị Hạnh", "CREATED")],
+    activityLogs: [createLog("log-001-1", "2026-07-02T08:15:00", "Nguyễn Văn An", "CREATED")],
   },
   {
     id: "tn-002",
@@ -159,7 +159,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
           newValue: "Chờ bổ sung hồ sơ ảnh hiện trường",
         },
       ]),
-      createLog("log-002-1", "2026-06-28T14:05:00", "Nguyễn Thị Hạnh", "CREATED"),
+      createLog("log-002-1", "2026-06-28T14:05:00", "Huỳnh Quốc Phong", "CREATED"),
     ],
   },
   {
@@ -170,7 +170,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     processingStatus: "Đã xử lý",
     overallStatus: "Đóng",
     recordedAt: "2026-06-15T21:30:00",
-    source: "Web",
+    source: "",
     reporterFullName: "",
     reporterEmail: "",
     reporterPhone: "",
@@ -261,7 +261,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     reporterPhone: "0923456789",
     reporterRoleName: "Tài xế",
     severity: "Cao",
-    informationSource: "Camera",
+    informationSource: "Báo cáo tài xế",
     reportingDepartment: "An toàn",
     handlingSolution: "BH thanh toán toàn bộ tại gara",
     attachments: [
@@ -309,7 +309,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
           newValue: "6,800,000",
         },
       ]),
-      createLog("log-004-1", "2026-05-20T15:45:00", "Lê Văn Khôi", "CREATED"),
+      createLog("log-004-1", "2026-05-20T15:45:00", "Trần Minh Bình", "CREATED"),
     ],
   },
   {
@@ -320,7 +320,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
     processingStatus: "Đang xử lý",
     overallStatus: "Đang theo dõi",
     recordedAt: "2026-07-05T09:00:00",
-    source: "Web",
+    source: "",
     reporterFullName: "",
     reporterEmail: "",
     reporterPhone: "",
@@ -374,7 +374,7 @@ export const DEFAULT_ACCIDENTS: AccidentRecord[] = [
           newValue: "Xe đang sửa tại garage đối tác",
         },
       ]),
-      createLog("log-005-1", "2026-07-05T22:10:00", "Lê Văn Khôi", "CREATED"),
+      createLog("log-005-1", "2026-07-05T09:00:00", "Nguyễn Thị Hạnh", "CREATED"),
     ],
   },
 ];

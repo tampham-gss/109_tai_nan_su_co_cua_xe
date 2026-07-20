@@ -7,7 +7,7 @@ import type {
 import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
 import { formatCurrency } from "./currencyUtils";
-import { formatViDate } from "./dateUtils";
+import { formatViDate, formatViDateTime } from "./dateUtils";
 
 export type AccidentComparableValues = Omit<
   AccidentRecord,
@@ -80,9 +80,7 @@ export function formatActivityFieldValue(
   }
 
   if (field === "recordedAt") {
-    const date = new Date(String(value));
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString("vi-VN");
+    return formatViDateTime(String(value));
   }
 
   if (

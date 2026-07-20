@@ -151,6 +151,8 @@ export const DEFAULT_INCIDENT_TYPES = [
 
 export const DEFAULT_SEVERITIES = ["Thấp", "Trung bình", "Cao", "Nghiêm trọng"];
 
+export const INCIDENT_SOURCE_DRIVER_APP = "App Tài xế";
+
 export const DEFAULT_INFORMATION_SOURCES = [
   "Camera",
   "Báo cáo tài xế",
