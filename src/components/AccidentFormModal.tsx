@@ -2,15 +2,17 @@ import { useEffect, useId, useMemo, useState } from "react";
 
 import type {
   AccidentRecord,
-  AccidentStatus,
   AreaCode,
   DetailType,
   Driver,
+  OverallStatus,
+  ProcessingStatus,
+  ReceptionStatus,
   TimeOfDay,
   Vehicle,
   YesNo,
 } from "../types";
-import { AREA_LABEL_BY_CODE } from "../types";
+import { AREA_LABEL_BY_CODE, DEFAULT_INCIDENT_TYPES, DEFAULT_SEVERITIES } from "../types";
 import { formatCurrency, parseCurrencyInput } from "../utils/currencyUtils";
 import AutocompleteField from "./AutocompleteField";
 import CreatableLookupField from "./CreatableLookupField";
@@ -21,6 +23,7 @@ import ModalFooter from "./modal/ModalFooter";
 import ModalHeader from "./modal/ModalHeader";
 import ViDateInput from "./ViDateInput";
 import ViDatePicker from "./ViDatePicker";
+import ViDateTimePicker from "./ViDateTimePicker";
 import { cn, textareaClass } from "./ui";
 import { MODAL_NATIVE_INPUT_CLASS } from "../styles/modalStyles";
 
@@ -47,18 +50,42 @@ type AccidentFormModalProps = {
   insuranceOptions: string[];
   paymentMethodOptions: string[];
   causeOptions: string[];
+  informationSourceOptions: string[];
+  reportingDepartmentOptions: string[];
   onInsuranceOptionsChange: (options: string[]) => void;
   onPaymentMethodOptionsChange: (options: string[]) => void;
   onCauseOptionsChange: (options: string[]) => void;
+  onInformationSourceOptionsChange: (options: string[]) => void;
+  onReportingDepartmentOptionsChange: (options: string[]) => void;
   onClose: () => void;
   onSubmit: (values: AccidentFormValues) => void;
 };
 
-const STATUS_ITEMS = [
+const RECEPTION_ITEMS = [
+  { id: "Chưa tiếp nhận", label: "Chưa tiếp nhận" },
+  { id: "Đã tiếp nhận", label: "Đã tiếp nhận" },
+];
+
+const PROCESSING_ITEMS = [
   { id: "Chưa xử lý", label: "Chưa xử lý" },
-  { id: "Theo dõi", label: "Theo dõi" },
+  { id: "Đang xử lý", label: "Đang xử lý" },
   { id: "Đã xử lý", label: "Đã xử lý" },
 ];
+
+const OVERALL_ITEMS = [
+  { id: "Đang theo dõi", label: "Đang theo dõi" },
+  { id: "Đóng", label: "Đóng" },
+];
+
+const INCIDENT_TYPE_ITEMS = DEFAULT_INCIDENT_TYPES.map((item) => ({
+  id: item,
+  label: item,
+}));
+
+const SEVERITY_ITEMS = DEFAULT_SEVERITIES.map((item) => ({
+  id: item,
+  label: item,
+}));
 
 const DETAIL_ITEMS = [
   { id: "Chủ quan", label: "Chủ quan" },
@@ -184,9 +211,13 @@ export default function AccidentFormModal({
   insuranceOptions,
   paymentMethodOptions,
   causeOptions,
+  informationSourceOptions,
+  reportingDepartmentOptions,
   onInsuranceOptionsChange,
   onPaymentMethodOptionsChange,
   onCauseOptionsChange,
+  onInformationSourceOptionsChange,
+  onReportingDepartmentOptionsChange,
   onClose,
   onSubmit,
 }: AccidentFormModalProps) {
@@ -261,11 +292,16 @@ export default function AccidentFormModal({
       area: selectedVehicle?.area ?? form.area,
       driverName: form.driverName.trim(),
       incidentLocation: form.incidentLocation.trim(),
+      incidentType: form.incidentType.trim(),
+      severity: form.severity.trim(),
+      informationSource: form.informationSource.trim(),
+      reportingDepartment: form.reportingDepartment.trim(),
       insuranceCompany: form.insuranceCompany.trim(),
       assessor: form.assessor.trim(),
       description: form.description.trim(),
       cause: form.cause.trim(),
       insurancePaymentMethod: form.insurancePaymentMethod.trim(),
+      handlingSolution: form.handlingSolution.trim(),
       notes: form.notes.trim(),
     });
   };
@@ -274,6 +310,24 @@ export default function AccidentFormModal({
 
   const incidentFields = (
     <>
+      <AutocompleteField
+        label="Loại sự cố"
+        value={form.incidentType}
+        options={INCIDENT_TYPE_ITEMS}
+        placeholder="Chọn loại sự cố"
+        searchable={false}
+        onChange={(incidentType) => patchForm({ incidentType })}
+      />
+
+      <AutocompleteField
+        label="Mức độ"
+        value={form.severity}
+        options={SEVERITY_ITEMS}
+        placeholder="Chọn mức độ"
+        searchable={false}
+        onChange={(severity) => patchForm({ severity })}
+      />
+
       <AutocompleteField
         label="Số xe"
         required
@@ -353,13 +407,65 @@ export default function AccidentFormModal({
         {showError("incidentDate") ? <ModalFieldError message={errors.incidentDate} /> : null}
       </div>
 
+      <div className="space-y-1.5 sm:col-span-2">
+        <ModalFieldLabel htmlFor="recorded-at">Thời điểm ghi nhận</ModalFieldLabel>
+        <ViDateTimePicker
+          id="recorded-at"
+          aria-label="Thời điểm ghi nhận"
+          className="w-full"
+          value={form.recordedAt}
+          placeholder="dd/MM/yyyy HH:mm:ss"
+          onChange={(recordedAt) => patchForm({ recordedAt })}
+        />
+      </div>
+
       <AutocompleteField
-        label="Trạng thái"
-        value={form.status}
-        options={STATUS_ITEMS}
+        label="Trạng thái tiếp nhận"
+        value={form.receptionStatus}
+        options={RECEPTION_ITEMS}
         placeholder="Chọn trạng thái"
         searchable={false}
-        onChange={(status) => patchForm({ status: status as AccidentStatus })}
+        onChange={(receptionStatus) =>
+          patchForm({ receptionStatus: receptionStatus as ReceptionStatus })
+        }
+      />
+
+      <AutocompleteField
+        label="Trạng thái xử lý"
+        value={form.processingStatus}
+        options={PROCESSING_ITEMS}
+        placeholder="Chọn trạng thái"
+        searchable={false}
+        onChange={(processingStatus) =>
+          patchForm({ processingStatus: processingStatus as ProcessingStatus })
+        }
+      />
+
+      <AutocompleteField
+        label="Trạng thái tổng thể"
+        value={form.overallStatus}
+        options={OVERALL_ITEMS}
+        placeholder="Chọn trạng thái"
+        searchable={false}
+        onChange={(overallStatus) => patchForm({ overallStatus: overallStatus as OverallStatus })}
+      />
+
+      <CreatableLookupField
+        label="Nguồn thông tin"
+        value={form.informationSource}
+        options={informationSourceOptions}
+        placeholder="Chọn nguồn thông tin"
+        onChange={(informationSource) => patchForm({ informationSource })}
+        onOptionsChange={onInformationSourceOptionsChange}
+      />
+
+      <CreatableLookupField
+        label="Bộ phận ghi nhận"
+        value={form.reportingDepartment}
+        options={reportingDepartmentOptions}
+        placeholder="Chọn bộ phận"
+        onChange={(reportingDepartment) => patchForm({ reportingDepartment })}
+        onOptionsChange={onReportingDepartmentOptionsChange}
       />
     </>
   );
@@ -534,6 +640,17 @@ export default function AccidentFormModal({
       </div>
 
       <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+        <ModalFieldLabel htmlFor="handling-solution">Giải pháp xử lý</ModalFieldLabel>
+        <textarea
+          id="handling-solution"
+          className={textareaClass}
+          rows={2}
+          value={form.handlingSolution}
+          onChange={(event) => patchForm({ handlingSolution: event.target.value })}
+        />
+      </div>
+
+      <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
         <ModalFieldLabel htmlFor="notes">Ghi chú</ModalFieldLabel>
         <textarea
           id="notes"
@@ -614,7 +731,22 @@ export default function AccidentFormModal({
 
 export function createEmptyAccidentForm(today: string): AccidentFormValues {
   return {
-    status: "Chưa xử lý",
+    code: "TN-20260718-001",
+    incidentType: "",
+    receptionStatus: "Chưa tiếp nhận",
+    processingStatus: "Chưa xử lý",
+    overallStatus: "Đang theo dõi",
+    recordedAt: `${today}T00:00:00`,
+    source: "",
+    reporterFullName: "",
+    reporterEmail: "",
+    reporterPhone: "",
+    reporterRoleName: "",
+    severity: "",
+    informationSource: "",
+    reportingDepartment: "",
+    handlingSolution: "",
+    attachments: [],
     area: "HCM",
     vehicleId: "",
     driverName: "",

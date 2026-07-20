@@ -7,14 +7,33 @@ import type {
 import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
 import { formatCurrency } from "./currencyUtils";
-import { formatViDate } from "./dateUtils";
+import { formatViDate, formatViDateTime } from "./dateUtils";
 
-export type AccidentComparableValues = Omit<AccidentRecord, "id" | "activityLogs">;
+export type AccidentComparableValues = Omit<
+  AccidentRecord,
+  | "id"
+  | "activityLogs"
+  | "attachments"
+  | "reporterFullName"
+  | "reporterEmail"
+  | "reporterPhone"
+  | "reporterRoleName"
+>;
 
 const ACTIVITY_VISIBLE_FIELD_LIMIT = 2;
 
 export const ACCIDENT_FIELD_LABELS: Record<keyof AccidentComparableValues, string> = {
-  status: "Trạng thái",
+  code: "Mã sự cố",
+  incidentType: "Loại sự cố",
+  receptionStatus: "Trạng thái tiếp nhận",
+  processingStatus: "Trạng thái xử lý",
+  overallStatus: "Trạng thái tổng thể",
+  recordedAt: "Thời điểm ghi nhận",
+  source: "Nguồn gửi",
+  severity: "Mức độ",
+  informationSource: "Nguồn thông tin",
+  reportingDepartment: "Bộ phận ghi nhận",
+  handlingSolution: "Giải pháp xử lý",
   area: "Khu vực",
   vehicleId: "Số xe",
   driverName: "Tài xế",
@@ -60,6 +79,10 @@ export function formatActivityFieldValue(
     return formatViDate(String(value)) || "—";
   }
 
+  if (field === "recordedAt") {
+    return formatViDateTime(String(value));
+  }
+
   if (
     field === "totalLoss" ||
     field === "insurancePay" ||
@@ -96,7 +119,16 @@ export function buildActivityChanges(
 }
 
 export function toComparableFormValues(record: AccidentRecord): AccidentComparableValues {
-  const { id: _id, activityLogs: _logs, ...values } = record;
+  const {
+    id: _id,
+    activityLogs: _logs,
+    attachments: _attachments,
+    reporterFullName: _reporterFullName,
+    reporterEmail: _reporterEmail,
+    reporterPhone: _reporterPhone,
+    reporterRoleName: _reporterRoleName,
+    ...values
+  } = record;
   return values;
 }
 

@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { LuSquarePen, LuTrash2 } from "react-icons/lu";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LuPencil, LuSquarePen, LuTrash2 } from "react-icons/lu";
 
-import type { AccidentRecord } from "../types";
+import type {
+  AccidentRecord,
+  OverallStatus,
+  ProcessingStatus,
+  ReceptionStatus,
+} from "../types";
 import { AREA_LABEL_BY_CODE } from "../types";
 import { getVehicleById } from "../data/mockData";
-import { formatCurrency } from "../utils/currencyUtils";
-import { formatViDate } from "../utils/dateUtils";
+import { formatViDate, formatViDateTime } from "../utils/dateUtils";
+import { severityBadgeClass } from "../utils/severityUtils";
 import TablePager, { buildPaginationMeta, DEFAULT_PAGE_SIZE } from "./TablePager";
 import { Tooltip } from "./Tooltip";
 import AccidentDeleteModal from "./AccidentDeleteModal";
@@ -20,24 +25,39 @@ const headerCenterClass =
 const bodyClass = "whitespace-nowrap px-3 py-2 text-slate-700";
 
 const rowClass =
-  "h-10 cursor-pointer border-b border-slate-100 hover:bg-slate-50/60";
+  "cursor-pointer border-b border-slate-100 hover:bg-slate-50/60";
+
+export type AccidentStatusPatch = Partial<
+  Pick<AccidentRecord, "receptionStatus" | "processingStatus" | "overallStatus">
+>;
 
 type AccidentTableProps = {
   records: AccidentRecord[];
   onViewDetail: (record: AccidentRecord) => void;
   onDelete: (id: string) => void;
+  onStatusChange: (id: string, patch: AccidentStatusPatch) => void;
 };
 
-function statusBadgeClass(status: AccidentRecord["status"]): string {
+const RECEPTION_OPTIONS: ReceptionStatus[] = ["Chưa tiếp nhận", "Đã tiếp nhận"];
+const PROCESSING_OPTIONS: ProcessingStatus[] = ["Chưa xử lý", "Đang xử lý", "Đã xử lý"];
+const OVERALL_OPTIONS: OverallStatus[] = ["Đang theo dõi", "Đóng"];
+
+function receptionBadgeClass(status: ReceptionStatus): string {
+  return status === "Đã tiếp nhận"
+    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+    : "border-amber-300 bg-amber-50 text-amber-700";
+}
+
+function processingBadgeClass(status: ProcessingStatus): string {
   if (status === "Đã xử lý") return "border-emerald-300 bg-emerald-50 text-emerald-700";
-  if (status === "Theo dõi") return "border-blue-300 bg-blue-50 text-blue-700";
+  if (status === "Đang xử lý") return "border-blue-300 bg-blue-50 text-blue-700";
   return "border-amber-300 bg-amber-50 text-amber-700";
 }
 
-function yesNoBadgeClass(value: AccidentRecord["tnds"]): string {
-  return value === "Có"
+function overallBadgeClass(status: OverallStatus): string {
+  return status === "Đóng"
     ? "border-slate-300 bg-slate-50 text-slate-700"
-    : "border-slate-200 bg-white text-slate-500";
+    : "border-blue-300 bg-blue-50 text-blue-700";
 }
 
 function IconEditButton({ onClick }: { onClick: () => void }) {
@@ -74,10 +94,126 @@ function formatDateCell(value: string): string {
   return value ? formatViDate(value) : "—";
 }
 
-export default function AccidentTable({ records, onViewDetail, onDelete }: AccidentTableProps) {
+function StatusSelectCell<T extends string>({
+  value,
+  options,
+  badgeClassName,
+  menuId,
+  openMenuId,
+  onOpenMenu,
+  onSelect,
+  ariaLabel,
+}: {
+  value: T;
+  options: T[];
+  badgeClassName: string;
+  menuId: string;
+  openMenuId: string | null;
+  onOpenMenu: (id: string | null) => void;
+  onSelect: (next: T) => void;
+  ariaLabel: string;
+}) {
+  const open = openMenuId === menuId;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+
+    const updatePos = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPos({ top: rect.bottom + 4, left: rect.left });
+    };
+
+    updatePos();
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        onOpenMenu(null);
+      }
+    };
+
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [open, onOpenMenu]);
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative inline-flex items-center gap-1"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <span
+        className={cn(
+          "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
+          badgeClassName
+        )}
+      >
+        {value}
+      </span>
+      <Tooltip label={ariaLabel} placement="bottom">
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-label={ariaLabel}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={() => onOpenMenu(open ? null : menuId)}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-blue-600 transition-colors hover:bg-blue-50"
+        >
+          <LuPencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+        </button>
+      </Tooltip>
+      {open && menuPos ? (
+        <ul
+          role="listbox"
+          className="fixed z-50 min-w-[10.5rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          {options.map((option) => (
+            <li key={option} role="option" aria-selected={option === value}>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50",
+                  option === value && "bg-blue-50 font-medium text-blue-700"
+                )}
+                onClick={() => {
+                  onSelect(option);
+                  onOpenMenu(null);
+                }}
+              >
+                {option}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+export default function AccidentTable({
+  records,
+  onViewDetail,
+  onDelete,
+  onStatusChange,
+}: AccidentTableProps) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [openStatusMenuId, setOpenStatusMenuId] = useState<string | null>(null);
 
   const pagination = useMemo(
     () => buildPaginationMeta(page, pageSize, records.length),
@@ -118,33 +254,23 @@ export default function AccidentTable({ records, onViewDetail, onDelete }: Accid
     <>
       <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
-          <table className="min-w-[2400px] w-full border-collapse text-sm">
+          <table className="min-w-[1280px] w-full border-collapse text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
+                <th className={headerClass}>Mã</th>
+                <th className={headerClass}>Loại sự cố</th>
+                <th className={headerClass}>Mức độ</th>
                 <th className={headerClass}>Số xe</th>
                 <th className={headerClass}>Tài xế</th>
                 <th className={headerClass}>Khu vực</th>
-                <th className={headerClass}>Địa điểm xảy ra tai nạn</th>
-                <th className={headerClass}>Ngày xảy ra sự cố</th>
-                <th className={headerClass}>Đơn vị Bảo hiểm</th>
-                <th className={headerClass}>Giám định viên</th>
+                <th className={headerClass}>Nguồn</th>
+                <th className={headerClass}>Địa điểm</th>
+                <th className={headerClass}>Ngày xảy ra</th>
+                <th className={headerClass}>Ngày tạo/gửi</th>
                 <th className={headerClass}>Diễn giải</th>
-                <th className={headerClass}>Nguyên nhân</th>
-                <th className={headerClass}>Chi tiết</th>
-                <th className={headerClass}>Thời điểm</th>
-                <th className={headerClass}>Ngày hoàn thành hồ sơ</th>
-                <th className={cn(headerClass, "text-right")}>Tổn thất</th>
-                <th className={cn(headerClass, "text-right")}>BH đền</th>
-                <th className={cn(headerClass, "text-right")}>TX chịu</th>
-                <th className={cn(headerClass, "text-right")}>Cty chia sẻ</th>
-                <th className={headerClass}>Hình thức bảo hiểm thanh toán</th>
-                <th className={headerClass}>Ngày thanh toán</th>
-                <th className={cn(headerClass, "text-right")}>Số tiền còn lại phải thanh toán</th>
-                <th className={headerClass}>TNDS</th>
-                <th className={headerClass}>Vật chất</th>
-                <th className={cn(headerClass, "text-right")}>Số ngày xe dừng</th>
-                <th className={headerClass}>Ghi chú</th>
-                <th className={headerClass}>Trạng thái</th>
+                <th className={headerClass}>Tiếp nhận</th>
+                <th className={headerClass}>Xử lý</th>
+                <th className={headerClass}>Tổng thể</th>
                 <th className={headerCenterClass}>Thao tác</th>
               </tr>
             </thead>
@@ -158,70 +284,79 @@ export default function AccidentTable({ records, onViewDetail, onDelete }: Accid
                     className={rowClass}
                     onClick={() => onViewDetail(row)}
                   >
+                    <td className={cn(bodyClass, "font-medium text-gray-900")}>{row.code}</td>
+                    <td className={bodyClass}>{row.incidentType || "—"}</td>
+                    <td className={bodyClass}>
+                      {row.severity ? (
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
+                            severityBadgeClass(row.severity)
+                          )}
+                        >
+                          {row.severity}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className={cn(bodyClass, "font-medium text-gray-900")}>
                       {vehicle?.plateNumber ?? "—"}
                     </td>
                     <td className={cn(bodyClass, "font-medium text-gray-900")}>{row.driverName}</td>
                     <td className={bodyClass}>{AREA_LABEL_BY_CODE[row.area]}</td>
-                    <td className={cn(bodyClass, "max-w-[12rem] truncate")} title={row.incidentLocation}>
+                    <td className={cn(bodyClass, "max-w-[14rem] truncate")} title={row.source}>
+                      {row.source || "—"}
+                    </td>
+                    <td className={cn(bodyClass, "max-w-[14rem] truncate")} title={row.incidentLocation}>
                       {row.incidentLocation || "—"}
                     </td>
                     <td className={cn(bodyClass, "tabular-nums")}>{formatDateCell(row.incidentDate)}</td>
-                    <td className={bodyClass}>{row.insuranceCompany || "—"}</td>
-                    <td className={bodyClass}>{row.assessor || "—"}</td>
-                    <td className={cn(bodyClass, "max-w-[14rem] truncate")} title={row.description}>
+                    <td className={cn(bodyClass, "tabular-nums whitespace-nowrap")}>
+                      {row.recordedAt ? formatViDateTime(row.recordedAt) : "—"}
+                    </td>
+                    <td className={cn(bodyClass, "max-w-[16rem] truncate")} title={row.description}>
                       {row.description || "—"}
                     </td>
-                    <td className={cn(bodyClass, "max-w-[12rem] truncate")} title={row.cause}>
-                      {row.cause || "—"}
-                    </td>
-                    <td className={bodyClass}>{row.detailType}</td>
-                    <td className={bodyClass}>{row.timeOfDay}</td>
-                    <td className={cn(bodyClass, "tabular-nums")}>{formatDateCell(row.completionDate)}</td>
-                    <td className={cn(bodyClass, "text-right tabular-nums")}>{formatCurrency(row.totalLoss)}</td>
-                    <td className={cn(bodyClass, "text-right tabular-nums")}>{formatCurrency(row.insurancePay)}</td>
-                    <td className={cn(bodyClass, "text-right tabular-nums")}>{formatCurrency(row.driverPay)}</td>
-                    <td className={cn(bodyClass, "text-right tabular-nums")}>{formatCurrency(row.companyShare)}</td>
-                    <td className={cn(bodyClass, "max-w-[12rem] truncate")} title={row.insurancePaymentMethod}>
-                      {row.insurancePaymentMethod || "—"}
-                    </td>
-                    <td className={cn(bodyClass, "tabular-nums")}>{formatDateCell(row.paymentDate)}</td>
-                    <td className={cn(bodyClass, "text-right tabular-nums font-medium text-amber-700")}>
-                      {formatCurrency(row.remainingPayment)}
+                    <td className={bodyClass}>
+                      <StatusSelectCell
+                        value={row.receptionStatus}
+                        options={RECEPTION_OPTIONS}
+                        badgeClassName={receptionBadgeClass(row.receptionStatus)}
+                        menuId={`${row.id}-reception`}
+                        openMenuId={openStatusMenuId}
+                        onOpenMenu={setOpenStatusMenuId}
+                        ariaLabel="Đổi trạng thái tiếp nhận"
+                        onSelect={(receptionStatus) =>
+                          onStatusChange(row.id, { receptionStatus })
+                        }
+                      />
                     </td>
                     <td className={bodyClass}>
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
-                          yesNoBadgeClass(row.tnds)
-                        )}
-                      >
-                        {row.tnds}
-                      </span>
+                      <StatusSelectCell
+                        value={row.processingStatus}
+                        options={PROCESSING_OPTIONS}
+                        badgeClassName={processingBadgeClass(row.processingStatus)}
+                        menuId={`${row.id}-processing`}
+                        openMenuId={openStatusMenuId}
+                        onOpenMenu={setOpenStatusMenuId}
+                        ariaLabel="Đổi trạng thái xử lý"
+                        onSelect={(processingStatus) =>
+                          onStatusChange(row.id, { processingStatus })
+                        }
+                      />
                     </td>
                     <td className={bodyClass}>
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
-                          yesNoBadgeClass(row.materialDamage)
-                        )}
-                      >
-                        {row.materialDamage}
-                      </span>
-                    </td>
-                    <td className={cn(bodyClass, "text-right tabular-nums")}>{row.vehicleStopDays}</td>
-                    <td className={cn(bodyClass, "max-w-[10rem] truncate")} title={row.notes}>
-                      {row.notes || "—"}
-                    </td>
-                    <td className={bodyClass}>
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                          statusBadgeClass(row.status)
-                        )}
-                      >
-                        {row.status}
-                      </span>
+                      <StatusSelectCell
+                        value={row.overallStatus}
+                        options={OVERALL_OPTIONS}
+                        badgeClassName={overallBadgeClass(row.overallStatus)}
+                        menuId={`${row.id}-overall`}
+                        openMenuId={openStatusMenuId}
+                        onOpenMenu={setOpenStatusMenuId}
+                        ariaLabel="Đổi trạng thái tổng thể"
+                        onSelect={(overallStatus) => onStatusChange(row.id, { overallStatus })}
+                      />
                     </td>
                     <td
                       className={cn(bodyClass, "text-center")}
